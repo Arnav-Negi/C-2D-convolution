@@ -14,8 +14,10 @@ namespace solution {
     std::string compute(const std::string &bitmap_path, const float kernel[3][3], const std::int32_t num_rows,
                         const std::int32_t num_cols) {
         std::string sol_path = std::filesystem::temp_directory_path() / "student_sol.bmp";
-        std::ofstream sol_fs(sol_path, std::ios::binary);
-        std::ifstream bitmap_fs(bitmap_path, std::ios::binary);
+//        std::ofstream sol_fs(sol_path, std::ios::binary);
+//        std::ifstream bitmap_fs(bitmap_path, std::ios::binary);
+
+        const float kernel1d[3] = {0.25f, 0.5f, 0.25f};
 
 //        const auto img = std::make_unique<float[]>(num_rows * num_cols);
 //        const auto padded_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
@@ -25,12 +27,16 @@ namespace solution {
 //        const auto horizontal_conv_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
 //        bitmap_fs.read(reinterpret_cast<char *>(img.get()), sizeof(float) * num_rows * num_cols);
 
+        std::FILE *file = std::fopen(bitmap_path.c_str(), "rb");
         // Padding
         for (std::int32_t i = 0; i < num_rows; i++) {
-            bitmap_fs.read(reinterpret_cast<char *>(padded_img + (i + 1) * (num_cols + 2) + 1),
-                           sizeof(float) * num_cols);
+//            bitmap_fs.read(reinterpret_cast<char *>(padded_img + (i + 1) * (num_cols + 2) + 1),
+//                           sizeof(float) * num_cols);
+// use fread
+            std::fread(padded_img + (i + 1) * (num_cols + 2) + 1, sizeof(float), num_cols, file);
         }
-        bitmap_fs.close();
+        std::fclose(file);
+//        bitmap_fs.close();
         // pad with zeros
         for (std::int32_t i = 0; i < num_rows + 2; i++) {
             padded_img[i * (num_cols + 2)] = 0.0;
@@ -47,10 +53,9 @@ namespace solution {
                 kernel_vec[i][j] = _mm512_set1_ps(kernel[i][j]);
             }
         }
-
-#pragma omp parallel for collapse(1) schedule(static) num_threads(24) shared(padded_img, output_img, kernel_vec)
+        std::FILE *sol_fs = std::fopen(sol_path.c_str(), "wb");
+#pragma omp parallel for collapse(1) schedule(static) num_threads(16) shared(padded_img, output_img, kernel_vec)
         for (std::int32_t i = 1; i < num_rows + 1; i++) {
-            std::cout << "Thread ID: " << omp_get_thread_num() << std::endl;
             for (std::int32_t j = 1; j < num_cols + 1; j += 16) {
                 __m512 sum = _mm512_setzero_ps();
                 for (std::int32_t di = -1; di <= 1; di++) {
@@ -68,10 +73,12 @@ namespace solution {
 
         // write the output image
         for (std::int32_t i = 1; i < num_rows + 1; i++) {
-            sol_fs.write(reinterpret_cast<char *>(output_img + i * (num_cols + 2) + 1), sizeof(float) * num_cols);
+//            sol_fs.write(reinterpret_cast<char *>(output_img + i * (num_cols + 2) + 1), sizeof(float) * num_cols);
+            std::fwrite(output_img + i * (num_cols + 2) + 1, sizeof(float), num_cols, sol_fs);
         }
 
-        sol_fs.close();
+//        sol_fs.close();
+        std::fclose(sol_fs);
         free(padded_img);
         free(output_img);
         return sol_path;

@@ -54,7 +54,7 @@ namespace solution {
         const std::int32_t BLOCK_SIZE = 512;
 
         std::FILE *sol_fs = std::fopen(sol_path.c_str(), "wb");
-#pragma omp parallel for num_threads(24) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
+#pragma omp parallel for num_threads(96) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
         // blocking the image
         for (std::int32_t ii = 1; ii < num_rows + 1; ii += BLOCK_SIZE) {
             for (std::int32_t jj = 1; jj < num_cols + 1; jj += BLOCK_SIZE) {

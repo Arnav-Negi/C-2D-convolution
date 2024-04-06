@@ -48,8 +48,9 @@ namespace solution {
             }
         }
 
-#pragma omp parallel for collapse(2) schedule(static) num_threads(16) shared(padded_img, output_img, kernel_vec)
+#pragma omp parallel for collapse(1) schedule(static) num_threads(24) shared(padded_img, output_img, kernel_vec)
         for (std::int32_t i = 1; i < num_rows + 1; i++) {
+            std::cout << "Thread ID: " << omp_get_thread_num() << std::endl;
             for (std::int32_t j = 1; j < num_cols + 1; j += 16) {
                 __m512 sum = _mm512_setzero_ps();
                 for (std::int32_t di = -1; di <= 1; di++) {

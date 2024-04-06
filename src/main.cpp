@@ -39,21 +39,21 @@ namespace solution {
             padded_img[(num_rows + 1) * (num_cols + 2) + j] = 0.0;
         }
 
-        __m256 kernel_vec[3][3];
+        __m512 kernel_vec[3][3];
         for (std::int32_t i = 0; i < 3; i++) {
             for (std::int32_t j = 0; j < 3; j++) {
-                kernel_vec[i][j] = _mm256_set1_ps(kernel[i][j]);
+                kernel_vec[i][j] = _mm512_set1_ps(kernel[i][j]);
             }
         }
 
             for (std::int32_t i = 1; i < num_rows + 1; i++) {
-                for (std::int32_t j = 1; j < num_cols + 1; j+=8) {
-                    __m256 sum = _mm256_setzero_ps();
+                for (std::int32_t j = 1; j < num_cols + 1; j+=16) {
+                    __m512 sum = _mm512_setzero_ps();
                     for (std::int32_t di = -1; di <= 1; di++) {
                         for (std::int32_t dj = -1; dj <= 1; dj++) {
 //                            sum += kernel[di + 1][dj + 1] * padded_img[(i + di) * (num_cols + 2) + j + dj];
-                            __m256 img_val = _mm256_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
-                            sum = _mm256_fmadd_ps(kernel_vec[di+1][dj+1], img_val, sum);
+                            __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
+                            sum = _mm512_fmadd_ps(kernel_vec[di+1][dj+1], img_val, sum);
                         }
                     }
                     // store the sum

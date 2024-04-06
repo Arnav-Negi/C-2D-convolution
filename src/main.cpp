@@ -18,16 +18,15 @@ namespace solution {
         std::ifstream bitmap_fs(bitmap_path, std::ios::binary);
 
 //        const auto img = std::make_unique<float[]>(num_rows * num_cols);
-        const auto padded_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
+//        const auto padded_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
+        // try raw pointer
+        auto *padded_img = static_cast<float *>(malloc((num_rows + 2) * (num_cols + 2) * sizeof(float)));
+//        const auto horizontal_conv_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
 //        bitmap_fs.read(reinterpret_cast<char *>(img.get()), sizeof(float) * num_rows * num_cols);
 
-        for (int i = 0; i<=9; i++) {
-            std::cout  << kernel[i/3][i%3] << " ";
-            if (i%3 == 2) std::cout << std::endl;
-        }
         // Padding
         for (std::int32_t i = 0; i < num_rows; i++) {
-            bitmap_fs.read(reinterpret_cast<char *>(padded_img.get() + (i + 1) * (num_cols + 2) + 1), sizeof(float) * num_cols);
+            bitmap_fs.read(reinterpret_cast<char *>(padded_img + (i + 1) * (num_cols + 2) + 1), sizeof(float) * num_cols);
         }
         bitmap_fs.close();
         // pad with zeros
@@ -53,7 +52,7 @@ namespace solution {
                     for (std::int32_t di = -1; di <= 1; di++) {
                         for (std::int32_t dj = -1; dj <= 1; dj++) {
 //                            sum += kernel[di + 1][dj + 1] * padded_img[(i + di) * (num_cols + 2) + j + dj];
-                            __m256 img_val = _mm256_loadu_ps(padded_img.get() + (i + di) * (num_cols + 2) + j + dj);
+                            __m256 img_val = _mm256_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
                             sum = _mm256_fmadd_ps(kernel_vec[di+1][dj+1], img_val, sum);
                         }
                     }
@@ -62,6 +61,7 @@ namespace solution {
                 }
             }
         sol_fs.close();
+        free(padded_img);
         return sol_path;
     }
 };

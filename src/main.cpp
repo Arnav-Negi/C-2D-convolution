@@ -94,9 +94,10 @@ namespace solution {
 
         std::FILE *sol_fs = std::fopen(sol_path.c_str(), "wb");
         // write the output image
-        for (std::int32_t i = 1; i < num_rows + 1; i++) {
-            std::fwrite(output_img + i * (num_cols + 2) + 1, sizeof(float), num_cols, sol_fs);
-        }
+//        for (std::int32_t i = 1; i < num_rows + 1; i++) {
+//            std::fwrite(output_img + i * (num_cols + 2) + 1, sizeof(float), num_cols, sol_fs);
+//        }
+        std::fwrite(padded_img, sizeof(float), num_rows * num_cols, sol_fs);
 
         std::fclose(sol_fs);
         free(padded_img);

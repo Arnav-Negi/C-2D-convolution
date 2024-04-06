@@ -66,32 +66,32 @@ namespace solution {
         }
 
         // horizontal pass
-#pragma omp parallel for collapse(2) num_threads(8) shared(padded_img, output_img, kernel_vec)
+#pragma omp parallel for collapse(1) num_threads(8) shared(padded_img, output_img, kernel_vec)
         for (std::int32_t i = 1; i < num_rows + 1; i++) {
             for (std::int32_t j = 1; j < num_cols + 1; j+=16) {
                 __m512 sum = _mm512_setzero_ps();
                     __m512 img_val = _mm512_loadu_ps(padded_img + i * (num_cols + 2) + j -1);
-                    sum = _mm512_fmadd_ps(kernel_vec[-1+1], img_val, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[0], img_val, sum);
                     img_val = _mm512_loadu_ps(padded_img + i * (num_cols + 2) + j + 0);
-                    sum = _mm512_fmadd_ps(kernel_vec[0+1], img_val, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[1], img_val, sum);
                     img_val = _mm512_loadu_ps(padded_img + i * (num_cols + 2) + j + 1);
-                    sum = _mm512_fmadd_ps(kernel_vec[1+1], img_val, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2], img_val, sum);
 
                 _mm512_storeu_ps(output_img + i * (num_cols + 2) + j, sum);
             }
         }
 
         // vertical pass - from output_img to padded_img
-#pragma omp parallel for collapse(2) num_threads(8) shared(padded_img, output_img, kernel_vec)
-        for (std::int32_t j = 1; j < num_cols + 1; j+=16) {
-            for (std::int32_t i = 1; i < num_rows + 1; i++) {
+#pragma omp parallel for collapse(1) num_threads(8) shared(padded_img, output_img, kernel_vec)
+        for (std::int32_t i = 1; i < num_rows + 1; i++) {
+            for (std::int32_t j = 1; j < num_cols + 1; j+=16) {
                 __m512 sum = _mm512_setzero_ps();
                     __m512 img_val = _mm512_loadu_ps(output_img + (i -1) * (num_cols + 2) + j);
-                    sum = _mm512_fmadd_ps(kernel_vec[-1+1], img_val, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[0], img_val, sum);
                     img_val = _mm512_loadu_ps(output_img + (i ) * (num_cols + 2) + j);
                     sum = _mm512_fmadd_ps(kernel_vec[1], img_val, sum);
                     img_val = _mm512_loadu_ps(output_img + (i + 1) * (num_cols + 2) + j);
-                    sum = _mm512_fmadd_ps(kernel_vec[1+1], img_val, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2], img_val, sum);
 
 //                store in padded_img without padding
                 _mm512_storeu_ps(padded_img + (i - 1) * num_cols + j-1, sum);

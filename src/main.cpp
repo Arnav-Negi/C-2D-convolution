@@ -27,6 +27,7 @@ namespace solution {
 
         std::FILE *file = std::fopen(bitmap_path.c_str(), "rb");
         // Padding
+#pragma omp parallel for num_threads(96) schedule(static) collapse(1) shared(padded_img)
         for (std::int32_t i = 0; i < num_rows; i++) {
             // use fread
             std::fread(padded_img + (i + 1) * (num_cols + 2) + 1, sizeof(float), num_cols, file);

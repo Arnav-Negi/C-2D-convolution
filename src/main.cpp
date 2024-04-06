@@ -23,7 +23,7 @@ namespace solution {
 //        const auto padded_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
         // try raw pointer
         auto *padded_img = static_cast<float *>(malloc((num_rows + 2) * (num_cols + 2) * sizeof(float)));
-        auto *output_img = static_cast<float *>(malloc((num_rows + 2) * (num_cols + 2) * sizeof(float)));
+        auto *output_img = static_cast<float *>(malloc((num_rows) * (num_cols) * sizeof(float)));
 //        const auto horizontal_conv_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
 //        bitmap_fs.read(reinterpret_cast<char *>(img.get()), sizeof(float) * num_rows * num_cols);
 
@@ -53,31 +53,52 @@ namespace solution {
                 kernel_vec[i][j] = _mm512_set1_ps(kernel[i][j]);
             }
         }
+        const std::int32_t VEC_SIZE = 16;
+        const std::int32_t BLOCK_SIZE = 512;
+
         std::FILE *sol_fs = std::fopen(sol_path.c_str(), "wb");
-#pragma omp parallel for collapse(1) schedule(static) num_threads(16) shared(padded_img, output_img, kernel_vec)
-        for (std::int32_t i = 1; i < num_rows + 1; i++) {
-            for (std::int32_t j = 1; j < num_cols + 1; j += 16) {
-                __m512 sum = _mm512_setzero_ps();
-                for (std::int32_t di = -1; di <= 1; di++) {
-                    for (std::int32_t dj = -1; dj <= 1; dj++) {
-//                            sum += kernel[di + 1][dj + 1] * padded_img[(i + di) * (num_cols + 2) + j + dj];
-                        __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
-                        sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
+#pragma omp parallel for num_threads(24) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
+        // blocking the image
+        for (std::int32_t ii = 1; ii < num_rows + 1; ii += BLOCK_SIZE) {
+            for (std::int32_t jj = 1; jj < num_cols + 1; jj += BLOCK_SIZE) {
+                for (std::int32_t i = ii; i < ii + BLOCK_SIZE; i++) {
+                    for (std::int32_t j = jj; j < jj + BLOCK_SIZE; j += VEC_SIZE) {
+                        __m512 sum = _mm512_setzero_ps();
+                        for (std::int32_t di = -1; di <= 1; di++) {
+                            for (std::int32_t dj = -1; dj <= 1; dj++) {
+                                __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
+                                sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
+                            }
+                        }
+
+                        // store the sum
+                        _mm512_storeu_ps(output_img + (i-1) * (num_cols) + j-1, sum);
                     }
                 }
-                // store the sum
-//                sol_fs.write(reinterpret_cast<char *>(&sum), sizeof(sum));
-                _mm512_storeu_ps(output_img + i * (num_cols + 2) + j, sum);
             }
         }
+//        for (std::int32_t i = 1; i < num_rows + 1; i++) {
+//            for (std::int32_t j = 1; j < num_cols + 1; j += 8) {
+//                __m512 sum = _mm512_setzero_ps();
+//                for (std::int32_t di = -1; di <= 1; di++) {
+//                    for (std::int32_t dj = -1; dj <= 1; dj++) {
+//                        __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
+//                        sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
+//                    }
+//                }
+//
+//                // store the sum
+//                _mm512_storeu_ps(output_img + (i-1) * (num_cols) + j-1, sum);
+//            }
+//        }
 
         // write the output image
-        for (std::int32_t i = 1; i < num_rows + 1; i++) {
-//            sol_fs.write(reinterpret_cast<char *>(output_img + i * (num_cols + 2) + 1), sizeof(float) * num_cols);
-            std::fwrite(output_img + i * (num_cols + 2) + 1, sizeof(float), num_cols, sol_fs);
-        }
+//        for (std::int32_t i = 1; i < num_rows + 1; i++) {
+////            sol_fs.write(reinterpret_cast<char *>(output_img + i * (num_cols + 2) + 1), sizeof(float) * num_cols);
+//            std::fwrite(output_img + i * (num_cols + 2) + 1, sizeof(float), num_cols, sol_fs);
+//        }
+        std::fwrite(output_img, sizeof(float), num_rows * num_cols, sol_fs);
 
-//        sol_fs.close();
         std::fclose(sol_fs);
         free(padded_img);
         free(output_img);

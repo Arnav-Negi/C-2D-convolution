@@ -37,7 +37,11 @@ namespace solution {
 //        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
         // using direct io
         output_img = static_cast<float *>(malloc(sizeof(float) * num_cols * num_rows));
-        read(fd, output_img, sizeof(float) * num_cols * num_rows);
+        int read_err = read(fd, output_img, sizeof(float) * num_cols * num_rows);
+        if (read_err == -1) {
+            std::cout << "read error" << std::endl;
+            exit(1);
+        }
 //        std::cout << "mmap read successful" << std::endl;
 
         // Padding
@@ -106,7 +110,7 @@ namespace solution {
 
 //        std::cout << "convolution successful" << std::endl;
 
-#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img) private(kernel_vec)
         for (std::int32_t i = 1; i < num_rows + 1; i++) {
             for (std::int32_t j = 1; j < num_cols + 1; j += VEC_SIZE) {
                 __m512 sum = _mm512_setzero_ps();

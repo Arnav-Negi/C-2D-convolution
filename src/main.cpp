@@ -21,7 +21,7 @@ namespace solution {
         std::string sol_path = std::filesystem::temp_directory_path() / "student_sol.bmp";
 
         constexpr std::int32_t VEC_SIZE = 16;
-        constexpr std::int32_t BLOCK_SIZE = 256;
+        constexpr std::int32_t BLOCK_SIZE = 64;
         constexpr std::int32_t NUM_THREADS = 48;
 
 //        const float kernel1d[3] = {0.25f, 0.5f, 0.25f};

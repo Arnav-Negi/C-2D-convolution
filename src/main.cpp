@@ -37,7 +37,7 @@ namespace solution {
 //        std::cout << "mmap read successful" << std::endl;
 
         // Padding
-#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
+//#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
         for (std::int32_t i = 0; i < num_rows; i++) {
             // use vectorized store load
             for (std::int32_t j = 0; j < num_cols; j += VEC_SIZE) {

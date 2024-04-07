@@ -9,30 +9,50 @@
 #include <string>
 #include <immintrin.h>
 #include <omp.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <cstring>
+#include <sys/stat.h>
 
 namespace solution {
     std::string compute(const std::string &bitmap_path, const float kernel[3][3], const std::int32_t num_rows,
                         const std::int32_t num_cols) {
         std::string sol_path = std::filesystem::temp_directory_path() / "student_sol.bmp";
 
+        constexpr std::int32_t VEC_SIZE = 16;
+        constexpr std::int32_t BLOCK_SIZE = 512;
+        constexpr std::int32_t NUM_THREADS = 48;
+
 //        const float kernel1d[3] = {0.25f, 0.5f, 0.25f};
 
         // try raw pointer
         auto *padded_img = static_cast<float *>(malloc((num_rows + 2) * (num_cols + 2) * sizeof(float)));
 
-        auto *output_img = static_cast<float *>(malloc((num_rows) * (num_cols) * sizeof(float)));
-//        const auto horizontal_conv_img = std::make_unique<float[]>((num_rows + 2) * (num_cols + 2));
-//        bitmap_fs.read(reinterpret_cast<char *>(img.get()), sizeof(float) * num_rows * num_cols);
+        float *output_img;
+        int fd = open(bitmap_path.c_str(), O_RDWR);
 
+        // mmap
+        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
+//        std::cout << "mmap read successful" << std::endl;
 
-        std::FILE *file = std::fopen(bitmap_path.c_str(), "rb");
         // Padding
-#pragma omp parallel for num_threads(96) schedule(static) collapse(1) shared(padded_img)
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
         for (std::int32_t i = 0; i < num_rows; i++) {
-            // use fread
-            std::fread(padded_img + (i + 1) * (num_cols + 2) + 1, sizeof(float), num_cols, file);
+            // use memcpy
+            std::memcpy(padded_img + (i + 1) * (num_cols + 2) + 1, output_img + i * num_cols, sizeof(float) * num_cols);
         }
-        std::fclose(file);
+        close(fd);
+
+//        std::cout << "memcpy successful" << std::endl;
+
+        // mmap output_img with sol file
+        fd = open(sol_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        ftruncate(fd, sizeof(float) * num_cols * num_rows);
+        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ | PROT_WRITE,
+                                                  MAP_SHARED, fd, 0));
+
+//        std::cout << "mmap write successful" << std::endl;
 
         // pad with zeros
         for (std::int32_t i = 0; i < num_rows + 2; i++) {
@@ -44,6 +64,8 @@ namespace solution {
             padded_img[(num_rows + 1) * (num_cols + 2) + j] = 0.0;
         }
 
+//        std::cout << "padding successful" << std::endl;
+
         __m512 kernel_vec[3][3];
         for (std::int32_t i = 0; i < 3; i++) {
             for (std::int32_t j = 0; j < 3; j++) {
@@ -51,12 +73,8 @@ namespace solution {
             }
         }
 
-        const std::int32_t VEC_SIZE = 16;
-        const std::int32_t BLOCK_SIZE = 512;
-
-        std::FILE *sol_fs = std::fopen(sol_path.c_str(), "wb");
-#pragma omp parallel for num_threads(96) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
-        // blocking the image
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
+         // blocking the image
         for (std::int32_t ii = 1; ii < num_rows + 1; ii += BLOCK_SIZE) {
             for (std::int32_t jj = 1; jj < num_cols + 1; jj += BLOCK_SIZE) {
                 for (std::int32_t i = ii; i < ii + BLOCK_SIZE; i++) {
@@ -76,8 +94,14 @@ namespace solution {
             }
         }
 
+//        std::cout << "convolution successful" << std::endl;
+
+        // unmap
+        munmap(output_img, sizeof(float) * num_cols * num_rows);
+        close(fd);
+
 //        for (std::int32_t i = 1; i < num_rows + 1; i++) {
-//            for (std::int32_t j = 1; j < num_cols + 1; j += 8) {
+//            for (std::int32_t j = 1; j < num_cols + 1; j += VEC_SIZE) {
 //                __m512 sum = _mm512_setzero_ps();
 //                for (std::int32_t di = -1; di <= 1; di++) {
 //                    for (std::int32_t dj = -1; dj <= 1; dj++) {
@@ -93,15 +117,12 @@ namespace solution {
 
         // write the output image
 //        for (std::int32_t i = 1; i < num_rows + 1; i++) {
-////            sol_fs.write(reinterpret_cast<char *>(output_img + i * (num_cols + 2) + 1), sizeof(float) * num_cols);
 //            std::fwrite(output_img + i * (num_cols + 2) + 1, sizeof(float), num_cols, sol_fs);
 //        }
-        std::fwrite(output_img, sizeof(float), num_rows * num_cols, sol_fs);
 
-        std::fclose(sol_fs);
+//        std::fwrite(output_img, sizeof(float), num_rows * num_cols, sol_fs);
 
         free(padded_img);
-        free(output_img);
         return sol_path;
     }
 };

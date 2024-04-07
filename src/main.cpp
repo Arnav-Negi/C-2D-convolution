@@ -39,8 +39,11 @@ namespace solution {
         // Padding
 #pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
         for (std::int32_t i = 0; i < num_rows; i++) {
-            // use memcpy
-            std::memcpy(padded_img + (i + 1) * (num_cols + 2) + 1, output_img + i * num_cols, sizeof(float) * num_cols);
+            // use vectorized store load
+            for (std::int32_t j = 0; j < num_cols; j += VEC_SIZE) {
+                __m512 img_val = _mm512_loadu_ps(output_img + i * num_cols + j);
+                _mm512_storeu_ps(padded_img + (i + 1) * (num_cols + 2) + j + 1, img_val);
+            }
         }
         close(fd);
 
@@ -72,6 +75,12 @@ namespace solution {
                 kernel_vec[i][j] = _mm512_set1_ps(kernel[i][j]);
             }
         }
+
+//        // kernel vec for 3x1 vector
+//        __m512 kernel_vec[3];
+//        for (std::int32_t i = 0; i < 3; i++) {
+//            kernel_vec[i] = _mm512_set1_ps(kernel1d[i]);
+//        }
 
 //#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
 //         // blocking the image

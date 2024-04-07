@@ -55,9 +55,9 @@ namespace solution {
 //        std::cout << "memcpy successful" << std::endl;
 
         // mmap output_img with sol file
-        fd = open(sol_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        fd = open(sol_path.c_str(), O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
         ftruncate(fd, sizeof(float) * num_cols * num_rows);
-        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ | PROT_WRITE,
+        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_WRITE,
                                                   MAP_SHARED, fd, 0));
 
 //        std::cout << "mmap write successful" << std::endl;

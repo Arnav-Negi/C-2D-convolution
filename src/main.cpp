@@ -30,20 +30,21 @@ namespace solution {
         auto *padded_img = static_cast<float *>(malloc((num_rows + 2) * (num_cols + 2) * sizeof(float)));
 
         float *output_img;
-        int fd = open(bitmap_path.c_str(), O_RDWR);
+        // direct io
+        int fd = open(bitmap_path.c_str(), O_RDONLY | O_DIRECT);
 
         // mmap
-        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
+//        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
+        // using direct io
+        output_img = static_cast<float *>(malloc(sizeof(float) * num_cols * num_rows));
+        read(fd, output_img, sizeof(float) * num_cols * num_rows);
 //        std::cout << "mmap read successful" << std::endl;
 
         // Padding
-//#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
         for (std::int32_t i = 0; i < num_rows; i++) {
-            // use vectorized store load
-            for (std::int32_t j = 0; j < num_cols; j += VEC_SIZE) {
-                __m512 img_val = _mm512_loadu_ps(output_img + i * num_cols + j);
-                _mm512_storeu_ps(padded_img + (i + 1) * (num_cols + 2) + j + 1, img_val);
-            }
+            // use memcpy
+            memcpy(padded_img + (i + 1) * (num_cols + 2) + 1, output_img + i * num_cols, sizeof(float) * num_cols);
         }
         close(fd);
 

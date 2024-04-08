@@ -36,9 +36,11 @@ namespace solution {
 
         // direct IO
         int infd = open(bitmap_path.c_str(), O_RDONLY | O_DIRECT);
-        auto input_img = static_cast<float *>(aligned_alloc(512, sizeof(float) * num_cols * num_rows));
+//        auto input_img = static_cast<float *>(aligned_alloc(512, sizeof(float) * num_cols * num_rows));
+           float *input_img, *output_img;
+           posix_memalign((void **)&input_img, 512, sizeof(float) * num_cols * num_rows);
         read(infd, input_img, sizeof(float) * num_cols * num_rows);
-        auto output_img = static_cast<float *>(aligned_alloc(512, sizeof(float) * num_cols * num_rows));
+        posix_memalign((void **)&output_img, 512, sizeof(float) * num_cols * num_rows);
 
         __m512 kernel_vec[3][3];
         for (std::int32_t i = 0; i < 3; i++) {
@@ -200,7 +202,6 @@ namespace solution {
             }
 # pragma omp barrier
         }
-        output_img[num_cols*num_rows - 1] = 152.385284f;
 //    std::cout << "convolution successful" << std::endl;
 
         // write the output image

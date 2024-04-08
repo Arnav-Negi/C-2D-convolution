@@ -28,13 +28,13 @@ namespace solution {
 
         // try raw pointer
         auto *padded_img = static_cast<float *>(malloc((num_rows + 2) * (num_cols + 2) * sizeof(float)));
-
-        float *output_img;
+//
+//        float *output_img;
         // direct io
         int fd = open(bitmap_path.c_str(), O_RDONLY);
 
         // mmap
-        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
+//        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
 //         using direct io
 //        output_img = static_cast<float *>(malloc(sizeof(float) * num_cols * num_rows));
 //        int read_err = read(fd, output_img, sizeof(float) * num_cols * num_rows);
@@ -45,20 +45,22 @@ namespace solution {
 //        std::cout << "mmap read successful" << std::endl;
 
         // Padding
-#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img, output_img)
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(1) shared(padded_img)
         for (std::int32_t i = 0; i < num_rows; i++) {
-            // use memcpy
-            memcpy(padded_img + (i + 1) * (num_cols + 2) + 1, output_img + i * num_cols, sizeof(float) * num_cols);
+            // use mmap for each row
+            mmap(padded_img + (i + 1) * (num_cols + 2) + 1, sizeof(float) * num_cols, PROT_READ,
+                 MAP_PRIVATE, fd, i * num_cols * sizeof(float));
+//            memcpy(padded_img + (i + 1) * (num_cols + 2) + 1, output_img + i * num_cols, sizeof(float) * num_cols);
         }
         close(fd);
-        munmap(output_img, sizeof(float) * num_cols * num_rows);
+//        munmap(output_img, sizeof(float) * num_cols * num_rows);
 
 //        std::cout << "memcpy successful" << std::endl;
 
         // mmap output_img with sol file
         fd = open(sol_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
         ftruncate(fd, sizeof(float) * num_cols * num_rows);
-        output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ | PROT_WRITE,
+        auto output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ | PROT_WRITE,
                                                   MAP_SHARED, fd, 0));
 
 //        std::cout << "mmap write successful" << std::endl;
@@ -129,7 +131,7 @@ firstprivate(kernel_vec, num_cols, num_rows) default(none)
         }
 //    std::cout << "convolution successful" << std::endl;
         // unmap
-        munmap(output_img, sizeof(float) * num_cols * num_rows);
+//        munmap(output_img, sizeof(float) * num_cols * num_rows);
 //        close(fd);
 
 //        free(padded_img);

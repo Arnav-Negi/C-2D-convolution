@@ -114,7 +114,7 @@ namespace solution {
                     __m512 sum = _mm512_setzero_ps();
                     for (std::int32_t di = -1; di <= 0; di++) {
                         for (std::int32_t dj = -1; dj <= 1; dj++) {
-                            __m512 img_val = _mm512_loadu_ps(input_img + (num_rows + di) * num_cols + j + dj);
+                            __m512 img_val = _mm512_loadu_ps(input_img + (num_rows + di - 1) * num_cols + j + dj);
                             sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
                         }
                     }

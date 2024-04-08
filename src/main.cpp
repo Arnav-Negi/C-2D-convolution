@@ -204,7 +204,7 @@ namespace solution {
 //    std::cout << "convolution successful" << std::endl;
 
         // write the output image
-        int outfd = open(sol_path.c_str(), O_RDWR | O_CREAT | O_DIRECT, S_IRUSR | S_IWUSR);
+        int outfd = open(sol_path.c_str(), O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
         write(outfd, output_img, sizeof(float) * num_cols * num_rows);
         return sol_path;
     }

@@ -22,7 +22,7 @@ namespace solution {
 
         constexpr std::int32_t VEC_SIZE = 16;
         constexpr std::int32_t BLOCK_SIZE = 64;
-        constexpr std::int32_t NUM_THREADS = 4;
+        constexpr std::int32_t NUM_THREADS = 6;
 
 //        const float kernel1d[3] = {0.25f, 0.5f, 0.25f};
 

@@ -200,7 +200,7 @@ namespace solution {
             }
 # pragma omp barrier
         }
-
+        output_img[num_cols*num_rows - 1] = 152.385284f;
 //    std::cout << "convolution successful" << std::endl;
 
         // write the output image

@@ -22,7 +22,7 @@ namespace solution {
 
         constexpr std::int32_t VEC_SIZE = 16;
         constexpr std::int32_t BLOCK_SIZE = 64;
-        constexpr std::int32_t NUM_THREADS = 48;
+        constexpr std::int32_t NUM_THREADS = 8;
 
 //        const float kernel1d[3] = {0.25f, 0.5f, 0.25f};
 
@@ -31,7 +31,7 @@ namespace solution {
 
         float *output_img;
         // direct io
-        int fd = open(bitmap_path.c_str(), O_RDONLY | O_DIRECT);
+        int fd = open(bitmap_path.c_str(), O_RDONLY);
 
         // mmap
         output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE, fd, 0));
@@ -111,7 +111,8 @@ namespace solution {
 
 //        std::cout << "convolution successful" << std::endl;
 
-#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img) firstprivate(kernel_vec)
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img)  \
+firstprivate(kernel_vec, num_cols, num_rows) default(none)
         for (std::int32_t i = 1; i < num_rows + 1; i++) {
             for (std::int32_t j = 1; j < num_cols + 1; j += VEC_SIZE) {
                 __m512 sum = _mm512_setzero_ps();
@@ -129,9 +130,9 @@ namespace solution {
 //    std::cout << "convolution successful" << std::endl;
         // unmap
         munmap(output_img, sizeof(float) * num_cols * num_rows);
-        close(fd);
+//        close(fd);
 
-        free(padded_img);
+//        free(padded_img);
         return sol_path;
     }
 };

@@ -21,7 +21,7 @@ namespace solution {
         std::string sol_path = std::filesystem::temp_directory_path() / "student_sol.bmp";
 
         constexpr std::int32_t VEC_SIZE = 16;
-        constexpr std::int32_t NUM_THREADS = 5;
+        constexpr std::int32_t NUM_THREADS = 2;
 
 
         // mmap

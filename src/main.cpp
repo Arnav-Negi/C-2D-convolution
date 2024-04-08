@@ -172,6 +172,8 @@ namespace solution {
                         sum = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum);
                     }
                 }
+                // store
+                _mm256_storeu_ps(output_img + i * num_cols + 7, sum);
             }
 
             // for each row 1 to num_rows - 2, column 15 to num_cols - 2 - main pixels

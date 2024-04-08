@@ -22,7 +22,7 @@ namespace solution {
 
         constexpr std::int32_t VEC_SIZE = 16;
         constexpr std::int32_t BLOCK_SIZE = 64;
-        constexpr std::int32_t NUM_THREADS = 6;
+        constexpr std::int32_t NUM_THREADS = 4;
 
 //        const float kernel1d[3] = {0.25f, 0.5f, 0.25f};
 
@@ -77,45 +77,46 @@ namespace solution {
 //            kernel_vec[i] = _mm512_set1_ps(kernel1d[i]);
 //        }
 
-//#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img, kernel_vec)
-//         // blocking the image
-//        for (std::int32_t ii = 1; ii < num_rows + 1; ii += BLOCK_SIZE) {
-//            for (std::int32_t jj = 1; jj < num_cols + 1; jj += BLOCK_SIZE) {
-//                for (std::int32_t i = ii; i < ii + BLOCK_SIZE; i++) {
-//                    for (std::int32_t j = jj; j < jj + BLOCK_SIZE; j += VEC_SIZE) {
-//                        __m512 sum = _mm512_setzero_ps();
-//                        for (std::int32_t di = -1; di <= 1; di++) {
-//                            for (std::int32_t dj = -1; dj <= 1; dj++) {
-//                                __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
-//                                sum = _mm512_fmadd_ps(static_cast<__m512>(kernel_vec[di + 1][dj + 1]), img_val, sum);
-//                            }
-//                        }
-//
-//                        // store the sum
-//                        _mm512_storeu_ps(output_img + (i - 1) * (num_cols) + j - 1, sum);
-//                    }
-//                }
-//            }
-//        }
+#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img)  \
+firstprivate(kernel_vec, num_cols, num_rows) default(none)
+         // blocking the image
+        for (std::int32_t ii = 1; ii < num_rows + 1; ii += BLOCK_SIZE) {
+            for (std::int32_t jj = 1; jj < num_cols + 1; jj += BLOCK_SIZE) {
+                for (std::int32_t i = ii; i < ii + BLOCK_SIZE; i++) {
+                    for (std::int32_t j = jj; j < jj + BLOCK_SIZE; j += VEC_SIZE) {
+                        __m512 sum = _mm512_setzero_ps();
+                        for (std::int32_t di = -1; di <= 1; di++) {
+                            for (std::int32_t dj = -1; dj <= 1; dj++) {
+                                __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
+                                sum = _mm512_fmadd_ps(static_cast<__m512>(kernel_vec[di + 1][dj + 1]), img_val, sum);
+                            }
+                        }
+
+                        // store the sum
+                        _mm512_storeu_ps(output_img + (i - 1) * (num_cols) + j - 1, sum);
+                    }
+                }
+            }
+        }
 
 //        std::cout << "convolution successful" << std::endl;
 
-#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img)  \
-firstprivate(kernel_vec, num_cols, num_rows) default(none)
-        for (std::int32_t i = 1; i < num_rows + 1; i++) {
-            for (std::int32_t j = 1; j < num_cols + 1; j += VEC_SIZE) {
-                __m512 sum = _mm512_setzero_ps();
-                for (std::int32_t di = -1; di <= 1; di++) {
-                    for (std::int32_t dj = -1; dj <= 1; dj++) {
-                        __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
-                        sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
-                    }
-                }
-
-                // store the sum
-                _mm512_storeu_ps(output_img + (i-1) * (num_cols) + j-1, sum);
-            }
-        }
+//#pragma omp parallel for num_threads(NUM_THREADS) schedule(static) collapse(2) shared(padded_img, output_img)  \
+//firstprivate(kernel_vec, num_cols, num_rows) default(none)
+//        for (std::int32_t i = 1; i < num_rows + 1; i++) {
+//            for (std::int32_t j = 1; j < num_cols + 1; j += VEC_SIZE) {
+//                __m512 sum = _mm512_setzero_ps();
+//                for (std::int32_t di = -1; di <= 1; di++) {
+//                    for (std::int32_t dj = -1; dj <= 1; dj++) {
+//                        __m512 img_val = _mm512_loadu_ps(padded_img + (i + di) * (num_cols + 2) + j + dj);
+//                        sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
+//                    }
+//                }
+//
+//                // store the sum
+//                _mm512_storeu_ps(output_img + (i-1) * (num_cols) + j-1, sum);
+//            }
+//        }
 //    std::cout << "convolution successful" << std::endl;
         return sol_path;
     }

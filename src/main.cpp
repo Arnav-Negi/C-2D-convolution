@@ -25,22 +25,21 @@ namespace solution {
 
 
         // mmap
-//        int infd = open(bitmap_path.c_str(), O_RDONLY);
-//        auto input_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE,
-//                                                   infd, 0));
-//
-//        int outfd = open(sol_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
-//        ftruncate(outfd, sizeof(float) * num_cols * num_rows);
-//        auto output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows,
-//                                                    PROT_READ | PROT_WRITE, MAP_SHARED, outfd, 0));
+        int infd = open(bitmap_path.c_str(), O_RDONLY);
+        auto input_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows, PROT_READ, MAP_PRIVATE,
+                                                   infd, 0));
+
+        int outfd = open(sol_path.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+        ftruncate(outfd, sizeof(float) * num_cols * num_rows);
+        auto output_img = static_cast<float *>(mmap(nullptr, sizeof(float) * num_cols * num_rows,
+                                                    PROT_READ | PROT_WRITE, MAP_SHARED, outfd, 0));
 
         // direct IO
-        int infd = open(bitmap_path.c_str(), O_RDONLY | O_DIRECT);
-//        auto input_img = static_cast<float *>(aligned_alloc(512, sizeof(float) * num_cols * num_rows));
-           float *input_img, *output_img;
-           posix_memalign((void **)&input_img, 512, sizeof(float) * num_cols * num_rows);
-        read(infd, input_img, sizeof(float) * num_cols * num_rows);
-        posix_memalign((void **)&output_img, 512, sizeof(float) * num_cols * num_rows);
+//        int infd = open(bitmap_path.c_str(), O_RDONLY | O_DIRECT);
+//        float *input_img, *output_img;
+//        posix_memalign((void **) &input_img, 512, sizeof(float) * num_cols * num_rows);
+//        read(infd, input_img, sizeof(float) * num_cols * num_rows);
+//        posix_memalign((void **) &output_img, 512, sizeof(float) * num_cols * num_rows);
 
         __m512 kernel_vec[3][3];
         for (std::int32_t i = 0; i < 3; i++) {
@@ -205,8 +204,8 @@ namespace solution {
 //    std::cout << "convolution successful" << std::endl;
 
         // write the output image
-        int outfd = open(sol_path.c_str(), O_CREAT|O_TRUNC|O_WRONLY|O_DIRECT, S_IRWXU);
-        write(outfd, output_img, sizeof(float) * num_cols * num_rows);
+//        int outfd = open(sol_path.c_str(), O_CREAT | O_TRUNC | O_WRONLY | O_DIRECT, S_IRWXU);
+//        write(outfd, output_img, sizeof(float) * num_cols * num_rows);
         return sol_path;
     }
 };

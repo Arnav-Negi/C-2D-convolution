@@ -92,7 +92,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm_storeu_ps(output_img + j, sum);
+                    _mm_stream_ps(output_img + j, sum);
                 }
 
                 // 7 - 14 using kernel_vec8
@@ -108,7 +108,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm256_storeu_ps(output_img + j, sum);
+                    _mm256_stream_ps(output_img + j, sum);
                 }
 
                 // need to start from 15 and go till num_cols - 2
@@ -124,7 +124,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm512_storeu_ps(output_img + j, sum);
+                    _mm512_stream_ps(output_img + j, sum);
                 }
 
                 // top right corner
@@ -175,7 +175,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm_storeu_ps(output_img + i * num_cols + j, sum);
+                    _mm_stream_ps(output_img + i * num_cols + j, sum);
                 }
 
                 // 7 - 14 using kernel_vec8
@@ -191,7 +191,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm256_storeu_ps(output_img + i * num_cols + j, sum);
+                    _mm256_stream_ps(output_img + i * num_cols + j, sum);
                 }
 
                 // need to start from 15 and go till num_cols - 2
@@ -207,7 +207,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm512_storeu_ps(output_img + i * num_cols + j, sum);
+                    _mm512_stream_ps(output_img + i * num_cols + j, sum);
                 }
 
                 // last column
@@ -254,7 +254,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
+                    _mm_stream_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
                 // 7 - 14 using kernel_vec8
@@ -270,7 +270,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm256_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
+                    _mm256_stream_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
                 // need to start from 15 and go till num_cols - 2
@@ -286,7 +286,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm512_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
+                    _mm512_stream_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
                 // bottom right corner
@@ -325,7 +325,7 @@ namespace solution {
 //                        }
 //
 //                        // store the sum
-//                        _mm512_storeu_ps(output_img + (i - 1) * (num_cols) + j - 1, sum);
+//                        _mm512_stream_ps(output_img + (i - 1) * (num_cols) + j - 1, sum);
 //                    }
 //                }
 //            }
@@ -344,6 +344,6 @@ namespace solution {
 //                }
 //
 //                // store the sum
-//                _mm512_storeu_ps(output_img + (i-1) * (num_cols) + j-1, sum);
+//                _mm512_stream_ps(output_img + (i-1) * (num_cols) + j-1, sum);
 //            }
 //        }

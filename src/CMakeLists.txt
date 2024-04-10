@@ -2,7 +2,7 @@ add_library(studentlib main.cpp)
 target_include_directories(studentlib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 # Define the directory where your files are located
-set(MY_DIRECTORY ${CMAKE_BINARY_DIR})
+set(MY_DIRECTORY "${CMAKE_BINARY_DIR}/src")
 
 # Define the file extension you're looking for
 set(FILE_EXTENSION ".gcda")

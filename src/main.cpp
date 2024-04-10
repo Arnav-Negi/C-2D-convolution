@@ -109,6 +109,7 @@ namespace solution {
                     _mm256_storeu_ps(output_img + j, sum);
                 }
 
+#pragma GCC unroll 4
                 // need to start from 15 and go till num_cols - 2
                 for (std::int32_t j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
@@ -190,6 +191,7 @@ namespace solution {
                     _mm256_storeu_ps(output_img + i * num_cols + j, sum);
                 }
 
+#pragma GCC unroll 4
                 // need to start from 15 and go till num_cols - 2
                 for (int j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
@@ -269,6 +271,7 @@ namespace solution {
                     _mm256_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
+#pragma GCC unroll 4
                 // need to start from 15 and go till num_cols - 2
                 for (std::int32_t j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();

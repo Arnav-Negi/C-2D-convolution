@@ -1,4 +1,4 @@
-#pragma GCC optimize("O3,GCC unroll-loops")
+#pragma GCC optimize("O3,unroll-loops")
 #pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
 
 #include <iostream>
@@ -77,11 +77,11 @@ namespace solution {
                 __m128 sum = _mm_setzero_ps();
                 for (std::int32_t di = 0; di <= 1; di++) {
                     for (std::int32_t dj = -1; dj <= 1; dj++) {
-                        __m128 img_val = _mm_loadu_ps(input_img + di * num_cols + 2 + dj);
+                        __m128 img_val = _mm_loadu_ps(input_img + di * num_cols + 3 + dj);
                         sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
                     }
                 }
-                _mm_storeu_ps(output_img + 2, sum);
+                _mm_storeu_ps(output_img + 3 sum);
 
                 // 7 - 14 using kernel_vec8
                 __m256 sum8 = _mm256_setzero_ps();

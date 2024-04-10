@@ -54,7 +54,8 @@ namespace solution {
                 kernel_vec4[i][j] = _mm_set1_ps(kernel[i][j]);
             }
         }
-
+        setenv("OMP_NUM_THREADS", std::to_string(NUM_THREADS).c_str(), 1);
+        setenv("OMP_PROC_BIND", "true", 1);
 #pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows)
         {
             // top row

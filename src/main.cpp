@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 namespace solution {
     std::string compute(const std::string &bitmap_path, const float kernel[3][3], const std::int32_t num_rows,
@@ -21,7 +22,7 @@ namespace solution {
         std::string sol_path = std::filesystem::temp_directory_path() / "student_sol.bmp";
 
         constexpr std::int32_t VEC_SIZE = 16;
-        constexpr std::int32_t NUM_THREADS = 4;
+        constexpr std::int32_t NUM_THREADS = 8;
 
 
 //         mmap
@@ -54,6 +55,7 @@ namespace solution {
                 kernel_vec4[i][j] = _mm_set1_ps(kernel[i][j]);
             }
         }
+        setenv("OMP_PROC_BIND", "true", 1);
 
 #pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows)
         {

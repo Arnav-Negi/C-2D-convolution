@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <cstring>
 #include <sys/stat.h>
+#include <stdlib.h>
 
 namespace solution {
     std::string compute(const std::string &bitmap_path, const float kernel[3][3], const std::int32_t num_rows,
@@ -55,28 +56,10 @@ namespace solution {
             }
         }
 
+        setenv("OMP_NUM_THREADS", std::to_string(NUM_THREADS).c_str(), 1);
+        setenv("OMP_PROC_BIND", "true", 1);
 #pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows)
         {
-//            // all corners along with 8 pixels along each side
-//#pragma omp single nowait
-//            {
-//                // non vectorized code for corners
-//                output_img[0] = kernel[1][1] * input_img[0] + kernel[1][2] * input_img[1] +
-//                                kernel[2][1] * input_img[num_cols] + kernel[2][2] * input_img[num_cols + 1];
-//                output_img[num_cols - 1] =
-//                        kernel[1][0] * input_img[num_cols - 2] + kernel[1][1] * input_img[num_cols - 1] +
-//                        kernel[2][0] * input_img[2 * num_cols - 2] +
-//                        kernel[2][1] * input_img[2 * num_cols - 1];
-//                output_img[num_cols * (num_rows - 1)] = kernel[0][1] * input_img[num_cols * (num_rows - 2)] +
-//                                                        kernel[0][2] * input_img[num_cols * (num_rows - 2) + 1] +
-//                                                        kernel[1][1] * input_img[num_cols * (num_rows - 1)] +
-//                                                        kernel[1][2] * input_img[num_cols * (num_rows - 1) + 1];
-//                output_img[num_cols * num_rows - 1] = kernel[0][0] * input_img[num_cols * (num_rows - 1) - 2] +
-//                                                      kernel[0][1] * input_img[num_cols * (num_rows - 1) - 1] +
-//                                                      kernel[1][0] * input_img[num_cols * num_rows - 2] +
-//                                                      kernel[1][1] * input_img[num_cols * num_rows - 1];
-//            }
-
             // top row
 #pragma omp single nowait
             {

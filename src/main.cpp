@@ -81,7 +81,7 @@ namespace solution {
                         sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
                     }
                 }
-                _mm_storeu_ps(output_img + 3 sum);
+                _mm_storeu_ps(output_img + 3, sum);
 
                 // 7 - 14 using kernel_vec8
                 __m256 sum8 = _mm256_setzero_ps();

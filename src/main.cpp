@@ -80,11 +80,10 @@ namespace solution {
                 for (std::int32_t di = 0; di <= 1; di++) {
 #pragma GCC unroll 3
                     for (std::int32_t dj = -1; dj <= 1; dj++) {
-                        __m128 img_val = _mm_loadu_ps(input_img + di * num_cols + 3 + dj);
+                        __m128 img_val = _mm_loadu_ps(input_img + di * num_cols + 4 + dj);
                         sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
                     }
                 }
-
                 _mm_store_ps(output_img + 4, sum);
 
                 // 8 - 15 using kernel_vec8, aligned store
@@ -93,7 +92,7 @@ namespace solution {
                 for (std::int32_t di = 0; di <= 1; di++) {
 #pragma GCC unroll 3
                     for (std::int32_t dj = -1; dj <= 1; dj++) {
-                        __m256 img_val = _mm256_loadu_ps(input_img + di * num_cols + 7 + dj);
+                        __m256 img_val = _mm256_loadu_ps(input_img + di * num_cols + 8 + dj);
                         sum8 = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum8);
                     }
                 }
@@ -187,7 +186,7 @@ namespace solution {
                 for (int di = -1; di <= 1; di++) {
 #pragma GCC unroll 3
                     for (int dj = -1; dj <= 1; dj++) {
-                        __m128 img_val = _mm_loadu_ps(input_img + (i + di) * num_cols + 3 + dj);
+                        __m128 img_val = _mm_loadu_ps(input_img + (i + di) * num_cols + 4 + dj);
                         sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
                     }
                 }
@@ -199,7 +198,7 @@ namespace solution {
                 for (int di = -1; di <= 1; di++) {
 #pragma GCC unroll 3
                     for (int dj = -1; dj <= 1; dj++) {
-                        __m256 img_val = _mm256_loadu_ps(input_img + (i + di) * num_cols + 7 + dj);
+                        __m256 img_val = _mm256_loadu_ps(input_img + (i + di) * num_cols + 8 + dj);
                         sum8 = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum8);
                     }
                 }
@@ -294,7 +293,7 @@ namespace solution {
                 for (std::int32_t di = -1; di <= 0; di++) {
 #pragma GCC unroll 3
                     for (std::int32_t dj = -1; dj <= 1; dj++) {
-                        __m128 img_val = _mm_loadu_ps(input_img + (num_rows + di - 1) * num_cols + 3 + dj);
+                        __m128 img_val = _mm_loadu_ps(input_img + (num_rows + di - 1) * num_cols + 4 + dj);
                         sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
                     }
                 }
@@ -306,7 +305,7 @@ namespace solution {
                 for (std::int32_t di = -1; di <= 0; di++) {
 #pragma GCC unroll 3
                     for (std::int32_t dj = -1; dj <= 1; dj++) {
-                        __m256 img_val = _mm256_loadu_ps(input_img + (num_rows + di - 1) * num_cols + 7 + dj);
+                        __m256 img_val = _mm256_loadu_ps(input_img + (num_rows + di - 1) * num_cols + 8 + dj);
                         sum8 = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum8);
                     }
                 }

@@ -57,26 +57,6 @@ namespace solution {
 
 #pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows)
         {
-//            // all corners along with 8 pixels along each side
-//#pragma omp single nowait
-//            {
-//                // non vectorized code for corners
-//                output_img[0] = kernel[1][1] * input_img[0] + kernel[1][2] * input_img[1] +
-//                                kernel[2][1] * input_img[num_cols] + kernel[2][2] * input_img[num_cols + 1];
-//                output_img[num_cols - 1] =
-//                        kernel[1][0] * input_img[num_cols - 2] + kernel[1][1] * input_img[num_cols - 1] +
-//                        kernel[2][0] * input_img[2 * num_cols - 2] +
-//                        kernel[2][1] * input_img[2 * num_cols - 1];
-//                output_img[num_cols * (num_rows - 1)] = kernel[0][1] * input_img[num_cols * (num_rows - 2)] +
-//                                                        kernel[0][2] * input_img[num_cols * (num_rows - 2) + 1] +
-//                                                        kernel[1][1] * input_img[num_cols * (num_rows - 1)] +
-//                                                        kernel[1][2] * input_img[num_cols * (num_rows - 1) + 1];
-//                output_img[num_cols * num_rows - 1] = kernel[0][0] * input_img[num_cols * (num_rows - 1) - 2] +
-//                                                      kernel[0][1] * input_img[num_cols * (num_rows - 1) - 1] +
-//                                                      kernel[1][0] * input_img[num_cols * num_rows - 2] +
-//                                                      kernel[1][1] * input_img[num_cols * num_rows - 1];
-//            }
-
             // top row
 #pragma omp single nowait
             {
@@ -85,26 +65,31 @@ namespace solution {
                                 kernel[2][1] * input_img[num_cols] + kernel[2][2] * input_img[num_cols + 1];
 
                 // 1 - 2 no vectorise
-//#pragma unroll 2
-                for (std::int32_t j = 1; j < 3; j++) {
-                    output_img[j] = kernel[1][0] * input_img[j - 1] + kernel[1][1] * input_img[j] +
-                                    kernel[1][2] * input_img[j + 1] +
-                                    kernel[2][0] * input_img[num_cols + j - 1] +
-                                    kernel[2][1] * input_img[num_cols + j] +
-                                    kernel[2][2] * input_img[num_cols + j + 1];
-                }
+                output_img[1] =
+                        kernel[1][0] * input_img[0] + kernel[1][1] * input_img[1] + kernel[1][2] * input_img[2] +
+                        kernel[2][0] * input_img[num_cols - 1] + kernel[2][1] * input_img[num_cols] +
+                        kernel[2][2] * input_img[num_cols + 1];
+                output_img[2] =
+                        kernel[1][0] * input_img[1] + kernel[1][1] * input_img[2] + kernel[1][2] * input_img[3] +
+                        kernel[2][0] * input_img[num_cols] + kernel[2][1] * input_img[num_cols + 1] +
+                        kernel[2][2] * input_img[num_cols + 2];
 
                 // 3 - 6 using kernel_vec4
                 for (std::int32_t j = 3; j < 7; j += 4) {
                     __m128 sum = _mm_setzero_ps();
-//#pragma unroll 2
-                    for (std::int32_t di = 0; di <= 1; di++) {
-//#pragma unroll 3
-                        for (std::int32_t dj = -1; dj <= 1; dj++) {
-                            __m128 img_val = _mm_loadu_ps(input_img + di * num_cols + j + dj);
-                            sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
-                        }
-                    }
+                    __m128 img_val0 = _mm_loadu_ps(input_img + j - 1);
+                    __m128 img_val1 = _mm_loadu_ps(input_img + j);
+                    __m128 img_val2 = _mm_loadu_ps(input_img + j + 1);
+                    __m128 img_val3 = _mm_loadu_ps(input_img + num_cols + j - 1);
+                    __m128 img_val4 = _mm_loadu_ps(input_img + num_cols + j);
+                    __m128 img_val5 = _mm_loadu_ps(input_img + num_cols + j + 1);
+
+                    sum = _mm_fmadd_ps(kernel_vec4[1][0], img_val0, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[1][1], img_val1, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[1][2], img_val2, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[2][0], img_val3, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[2][1], img_val4, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[2][2], img_val5, sum);
 
                     // store the sum
                     _mm_storeu_ps(output_img + j, sum);
@@ -113,14 +98,19 @@ namespace solution {
                 // 7 - 14 using kernel_vec8
                 for (std::int32_t j = 7; j < 15; j += 8) {
                     __m256 sum = _mm256_setzero_ps();
-//#pragma unroll 2
-                    for (std::int32_t di = 0; di <= 1; di++) {
-//#pragma unroll 3
-                        for (std::int32_t dj = -1; dj <= 1; dj++) {
-                            __m256 img_val = _mm256_loadu_ps(input_img + di * num_cols + j + dj);
-                            sum = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum);
-                        }
-                    }
+                    __m256 img_val0 = _mm256_loadu_ps(input_img + j - 1);
+                    __m256 img_val1 = _mm256_loadu_ps(input_img + j);
+                    __m256 img_val2 = _mm256_loadu_ps(input_img + j + 1);
+                    __m256 img_val3 = _mm256_loadu_ps(input_img + num_cols + j - 1);
+                    __m256 img_val4 = _mm256_loadu_ps(input_img + num_cols + j);
+                    __m256 img_val5 = _mm256_loadu_ps(input_img + num_cols + j + 1);
+
+                    sum = _mm256_fmadd_ps(kernel_vec8[1][0], img_val0, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[1][1], img_val1, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[1][2], img_val2, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[2][0], img_val3, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[2][1], img_val4, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[2][2], img_val5, sum);
 
                     // store the sum
                     _mm256_storeu_ps(output_img + j, sum);
@@ -129,14 +119,19 @@ namespace solution {
                 // need to start from 15 and go till num_cols - 2
                 for (std::int32_t j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
-//#pragma unroll 2
-                    for (std::int32_t di = 0; di <= 1; di++) {
-//#pragma unroll 3
-                        for (std::int32_t dj = -1; dj <= 1; dj++) {
-                            __m512 img_val = _mm512_loadu_ps(input_img + di * num_cols + j + dj);
-                            sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
-                        }
-                    }
+                    __m512 img_val0 = _mm512_loadu_ps(input_img + j - 1);
+                    __m512 img_val1 = _mm512_loadu_ps(input_img + j);
+                    __m512 img_val2 = _mm512_loadu_ps(input_img + j + 1);
+                    __m512 img_val3 = _mm512_loadu_ps(input_img + num_cols + j - 1);
+                    __m512 img_val4 = _mm512_loadu_ps(input_img + num_cols + j);
+                    __m512 img_val5 = _mm512_loadu_ps(input_img + num_cols + j + 1);
+
+                    sum = _mm512_fmadd_ps(kernel_vec[1][0], img_val0, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[1][1], img_val1, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[1][2], img_val2, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2][0], img_val3, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2][1], img_val4, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2][2], img_val5, sum);
 
                     // store the sum
                     _mm512_storeu_ps(output_img + j, sum);
@@ -150,7 +145,7 @@ namespace solution {
             };
 
             // for each row 1 to num_rows - 2, column 0 seperately, then 1 to 14, then 15 to num_cols - 2, then num_cols - 1
-#pragma omp for schedule(static) collapse(1) nowait
+#pragma omp for collapse(1) nowait
             for (int i = 1; i < num_rows - 1; ++i) {
                 // column 0
                 output_img[i * num_cols] = kernel[0][1] * input_img[(i - 1) * num_cols] +
@@ -161,7 +156,7 @@ namespace solution {
                                            kernel[2][2] * input_img[(i + 1) * num_cols + 1];
 
                 // 1 - 2 no vectorize
-//#pragma unroll 2
+#pragma unroll 2
                 for (int j = 1; j < 3; j++) {
                     output_img[i * num_cols + j] =
                             kernel[0][0] * input_img[(i - 1) * num_cols + j - 1] +
@@ -178,14 +173,25 @@ namespace solution {
                 // 3 - 6 using kernel_vec4
                 for (int j = 3; j < 7; j += 4) {
                     __m128 sum = _mm_setzero_ps();
-//#pragma unroll 3
-                    for (int di = -1; di <= 1; di++) {
-//#pragma unroll 3
-                        for (int dj = -1; dj <= 1; dj++) {
-                            __m128 img_val = _mm_loadu_ps(input_img + (i + di) * num_cols + j + dj);
-                            sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
-                        }
-                    }
+                    __m128 img_val0 = _mm_loadu_ps(input_img + (i - 1) * num_cols + j - 1);
+                    __m128 img_val1 = _mm_loadu_ps(input_img + (i - 1) * num_cols + j);
+                    __m128 img_val2 = _mm_loadu_ps(input_img + (i - 1) * num_cols + j + 1);
+                    __m128 img_val3 = _mm_loadu_ps(input_img + i * num_cols + j - 1);
+                    __m128 img_val4 = _mm_loadu_ps(input_img + i * num_cols + j);
+                    __m128 img_val5 = _mm_loadu_ps(input_img + i * num_cols + j + 1);
+                    __m128 img_val6 = _mm_loadu_ps(input_img + (i + 1) * num_cols + j - 1);
+                    __m128 img_val7 = _mm_loadu_ps(input_img + (i + 1) * num_cols + j);
+                    __m128 img_val8 = _mm_loadu_ps(input_img + (i + 1) * num_cols + j + 1);
+
+                    sum = _mm_fmadd_ps(kernel_vec4[0][0], img_val0, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[0][1], img_val1, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[0][2], img_val2, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[1][0], img_val3, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[1][1], img_val4, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[1][2], img_val5, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[2][0], img_val6, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[2][1], img_val7, sum);
+                    sum = _mm_fmadd_ps(kernel_vec4[2][2], img_val8, sum);
 
                     // store the sum
                     _mm_storeu_ps(output_img + i * num_cols + j, sum);
@@ -194,14 +200,25 @@ namespace solution {
                 // 7 - 14 using kernel_vec8
                 for (int j = 7; j < 15; j += 8) {
                     __m256 sum = _mm256_setzero_ps();
-//#pragma unroll 3
-                    for (int di = -1; di <= 1; di++) {
-//#pragma unroll 3
-                        for (int dj = -1; dj <= 1; dj++) {
-                            __m256 img_val = _mm256_loadu_ps(input_img + (i + di) * num_cols + j + dj);
-                            sum = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum);
-                        }
-                    }
+                    __m256 img_val0 = _mm256_loadu_ps(input_img + (i - 1) * num_cols + j - 1);
+                    __m256 img_val1 = _mm256_loadu_ps(input_img + (i - 1) * num_cols + j);
+                    __m256 img_val2 = _mm256_loadu_ps(input_img + (i - 1) * num_cols + j + 1);
+                    __m256 img_val3 = _mm256_loadu_ps(input_img + i * num_cols + j - 1);
+                    __m256 img_val4 = _mm256_loadu_ps(input_img + i * num_cols + j);
+                    __m256 img_val5 = _mm256_loadu_ps(input_img + i * num_cols + j + 1);
+                    __m256 img_val6 = _mm256_loadu_ps(input_img + (i + 1) * num_cols + j - 1);
+                    __m256 img_val7 = _mm256_loadu_ps(input_img + (i + 1) * num_cols + j);
+                    __m256 img_val8 = _mm256_loadu_ps(input_img + (i + 1) * num_cols + j + 1);
+
+                    sum = _mm256_fmadd_ps(kernel_vec8[0][0], img_val0, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[0][1], img_val1, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[0][2], img_val2, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[1][0], img_val3, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[1][1], img_val4, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[1][2], img_val5, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[2][0], img_val6, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[2][1], img_val7, sum);
+                    sum = _mm256_fmadd_ps(kernel_vec8[2][2], img_val8, sum);
 
                     // store the sum
                     _mm256_storeu_ps(output_img + i * num_cols + j, sum);
@@ -210,14 +227,25 @@ namespace solution {
                 // need to start from 15 and go till num_cols - 2
                 for (int j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
-//#pragma unroll 3
-                    for (int di = -1; di <= 1; ++di) {
-//#pragma unroll 3
-                        for (int dj = -1; dj <= 1; ++dj) {
-                            __m512 img_val = _mm512_loadu_ps(input_img + (i + di) * num_cols + j + dj);
-                            sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);
-                        }
-                    }
+                    __m512 img_val0 = _mm512_loadu_ps(input_img + (i - 1) * num_cols + j - 1);
+                    __m512 img_val1 = _mm512_loadu_ps(input_img + (i - 1) * num_cols + j);
+                    __m512 img_val2 = _mm512_loadu_ps(input_img + (i - 1) * num_cols + j + 1);
+                    __m512 img_val3 = _mm512_loadu_ps(input_img + i * num_cols + j - 1);
+                    __m512 img_val4 = _mm512_loadu_ps(input_img + i * num_cols + j);
+                    __m512 img_val5 = _mm512_loadu_ps(input_img + i * num_cols + j + 1);
+                    __m512 img_val6 = _mm512_loadu_ps(input_img + (i + 1) * num_cols + j - 1);
+                    __m512 img_val7 = _mm512_loadu_ps(input_img + (i + 1) * num_cols + j);
+                    __m512 img_val8 = _mm512_loadu_ps(input_img + (i + 1) * num_cols + j + 1);
+
+                    sum = _mm512_fmadd_ps(kernel_vec[0][0], img_val0, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[0][1], img_val1, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[0][2], img_val2, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[1][0], img_val3, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[1][1], img_val4, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[1][2], img_val5, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2][0], img_val6, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2][1], img_val7, sum);
+                    sum = _mm512_fmadd_ps(kernel_vec[2][2], img_val8, sum);
 
                     // store the sum
                     _mm512_storeu_ps(output_img + i * num_cols + j, sum);
@@ -243,7 +271,7 @@ namespace solution {
                                                         kernel[1][2] * input_img[(num_rows - 1) * num_cols + 1];
 
                 // 1 - 2 no vectorize
-//#pragma unroll 2
+#pragma unroll 2
                 for (std::int32_t j = 1; j < 3; j++) {
                     output_img[(num_rows - 1) * num_cols + j] =
                             kernel[0][0] * input_img[(num_rows - 2) * num_cols + j - 1] +
@@ -257,9 +285,9 @@ namespace solution {
                 // 3 - 6 using kernel_vec4
                 for (std::int32_t j = 3; j < 7; j += 4) {
                     __m128 sum = _mm_setzero_ps();
-//#pragma unroll 2
+#pragma unroll 2
                     for (std::int32_t di = -1; di <= 0; di++) {
-//#pragma unroll 3
+#pragma unroll 3
                         for (std::int32_t dj = -1; dj <= 1; dj++) {
                             __m128 img_val = _mm_loadu_ps(input_img + (num_rows + di - 1) * num_cols + j + dj);
                             sum = _mm_fmadd_ps(kernel_vec4[di + 1][dj + 1], img_val, sum);
@@ -273,9 +301,9 @@ namespace solution {
                 // 7 - 14 using kernel_vec8
                 for (std::int32_t j = 7; j < 15; j += 8) {
                     __m256 sum = _mm256_setzero_ps();
-//#pragma unroll 2
+#pragma unroll 2
                     for (std::int32_t di = -1; di <= 0; di++) {
-//#pragma unroll 3
+#pragma unroll 3
                         for (std::int32_t dj = -1; dj <= 1; dj++) {
                             __m256 img_val = _mm256_loadu_ps(input_img + (num_rows + di - 1) * num_cols + j + dj);
                             sum = _mm256_fmadd_ps(kernel_vec8[di + 1][dj + 1], img_val, sum);
@@ -289,9 +317,9 @@ namespace solution {
                 // need to start from 15 and go till num_cols - 2
                 for (std::int32_t j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
-//#pragma unroll 2
+#pragma unroll 2
                     for (std::int32_t di = -1; di <= 0; di++) {
-//#pragma unroll 3
+#pragma unroll 3
                         for (std::int32_t dj = -1; dj <= 1; dj++) {
                             __m512 img_val = _mm512_loadu_ps(input_img + (num_rows + di - 1) * num_cols + j + dj);
                             sum = _mm512_fmadd_ps(kernel_vec[di + 1][dj + 1], img_val, sum);

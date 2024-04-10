@@ -1,5 +1,4 @@
-add_library(studentlib main.cpp
-        check.cpp)
+add_library(studentlib main.cpp)
 target_include_directories(studentlib PUBLIC ${CMAKE_SOURCE_DIR}/include)
 
 # Define the directory where your files are located

@@ -1,8 +1,8 @@
 #pragma GCC optimize("O3,unroll-loops")
 #pragma GCC target("avx2,bmi,bmi2,lzcnt,popcnt")
 
-#include <iostream>
-#include <fstream>
+#include <iostoreu>
+#include <fstoreu>
 #include <memory>
 #include <cstdint>
 #include <filesystem>
@@ -56,11 +56,9 @@ namespace solution {
             }
         }
 
-        int threads[4] = {0};
-
         setenv("OMP_NUM_THREADS", std::to_string(NUM_THREADS).c_str(), 1);
         setenv("OMP_PROC_BIND", "true", 1);
-#pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img, threads) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows)
+#pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows) proc_bind(close)
         {
             // top row
 #pragma omp single nowait
@@ -92,7 +90,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm_stream_ps(output_img + j, sum);
+                    _mm_storeu_ps(output_img + j, sum);
                 }
 
                 // 7 - 14 using kernel_vec8
@@ -108,7 +106,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm256_stream_ps(output_img + j, sum);
+                    _mm256_storeu_ps(output_img + j, sum);
                 }
 
                 // need to start from 15 and go till num_cols - 2
@@ -124,7 +122,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm512_stream_ps(output_img + j, sum);
+                    _mm512_storeu_ps(output_img + j, sum);
                 }
 
                 // top right corner
@@ -137,8 +135,6 @@ namespace solution {
             // for each row 1 to num_rows - 2, column 0 seperately, then 1 to 14, then 15 to num_cols - 2, then num_cols - 1
 #pragma omp for schedule(static) collapse(1) nowait
             for (int i = 1; i < num_rows - 1; ++i) {
-                // print which threads are executing this region
-                threads[omp_get_thread_num()] = 1;
                 // column 0
                 output_img[i * num_cols] = kernel[0][1] * input_img[(i - 1) * num_cols] +
                                            kernel[0][2] * input_img[(i - 1) * num_cols + 1] +
@@ -175,7 +171,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm_stream_ps(output_img + i * num_cols + j, sum);
+                    _mm_storeu_ps(output_img + i * num_cols + j, sum);
                 }
 
                 // 7 - 14 using kernel_vec8
@@ -191,7 +187,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm256_stream_ps(output_img + i * num_cols + j, sum);
+                    _mm256_storeu_ps(output_img + i * num_cols + j, sum);
                 }
 
                 // need to start from 15 and go till num_cols - 2
@@ -207,7 +203,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm512_stream_ps(output_img + i * num_cols + j, sum);
+                    _mm512_storeu_ps(output_img + i * num_cols + j, sum);
                 }
 
                 // last column
@@ -254,7 +250,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm_stream_ps(output_img + (num_rows - 1) * num_cols + j, sum);
+                    _mm_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
                 // 7 - 14 using kernel_vec8
@@ -270,7 +266,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm256_stream_ps(output_img + (num_rows - 1) * num_cols + j, sum);
+                    _mm256_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
                 // need to start from 15 and go till num_cols - 2
@@ -286,7 +282,7 @@ namespace solution {
                     }
 
                     // store the sum
-                    _mm512_stream_ps(output_img + (num_rows - 1) * num_cols + j, sum);
+                    _mm512_storeu_ps(output_img + (num_rows - 1) * num_cols + j, sum);
                 }
 
                 // bottom right corner
@@ -298,10 +294,6 @@ namespace solution {
 //# pragma omp barrier
         }
 //    std::cout << "convolution successful" << std::endl;
-        std::cout << "Threads: ";
-        for (int i = 0; i < 4; i++) {
-            std::cout << threads[i] << " ";
-        }
         return sol_path;
     }
 };
@@ -325,7 +317,7 @@ namespace solution {
 //                        }
 //
 //                        // store the sum
-//                        _mm512_stream_ps(output_img + (i - 1) * (num_cols) + j - 1, sum);
+//                        _mm512_storeu_ps(output_img + (i - 1) * (num_cols) + j - 1, sum);
 //                    }
 //                }
 //            }
@@ -344,6 +336,6 @@ namespace solution {
 //                }
 //
 //                // store the sum
-//                _mm512_stream_ps(output_img + (i-1) * (num_cols) + j-1, sum);
+//                _mm512_storeu_ps(output_img + (i-1) * (num_cols) + j-1, sum);
 //            }
 //        }

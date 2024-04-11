@@ -21,8 +21,19 @@ namespace solution {
                         const std::int32_t num_cols) {
         std::string sol_path = std::filesystem::temp_directory_path() / "student_sol.bmp";
 
-        constexpr std::int32_t VEC_SIZE = 16;
+        std::int32_t VEC_SIZE = 16;
         constexpr std::int32_t NUM_THREADS = 4;
+
+#ifndef __AVX512F__
+        VEC_SIZE = 8;
+#define __m512 __m256
+#define _mm512_setzero_ps _mm256_setzero_ps
+#define _mm512_set1_ps _mm256_set1_ps
+#define _mm512_loadu_ps _mm256_loadu_ps
+#define _mm512_fmadd_ps _mm256_fmadd_ps
+#define _mm512_storeu_ps _mm256_storeu_ps
+
+#endif
 
 
 //         mmap
@@ -56,9 +67,11 @@ namespace solution {
             }
         }
 
+        omp_set_nested(true);
+
 //        setenv("OMP_NUM_THREADS", std::to_string(NUM_THREADS).c_str(), 1);
 //        setenv("OMP_PROC_BIND", "true", 1);
-#pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows) proc_bind(close)
+#pragma omp parallel num_threads(NUM_THREADS) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows, VEC_SIZE) proc_bind(close)
         {
             // top row
 #pragma omp single nowait
@@ -191,6 +204,7 @@ namespace solution {
                 }
 
                 // need to start from 15 and go till num_cols - 2
+#pragma omp parallel for schedule(static) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows, VEC_SIZE)
                 for (int j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
 #pragma GCC unroll 3

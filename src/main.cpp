@@ -133,7 +133,7 @@ namespace solution {
             };
 
             // for each row 1 to num_rows - 2, column 0 seperately, then 1 to 14, then 15 to num_cols - 2, then num_cols - 1
-#pragma omp for schedule(static, 1) collapse(1) nowait
+#pragma omp for schedule(static) nowait
             for (int i = 1; i < num_rows - 1; ++i) {
                 // column 0
                 output_img[i * num_cols] = kernel[0][1] * input_img[(i - 1) * num_cols] +

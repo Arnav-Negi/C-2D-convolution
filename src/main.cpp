@@ -204,7 +204,7 @@ namespace solution {
                 }
 
                 // need to start from 15 and go till num_cols - 2
-#pragma omp parallel for schedule(static) default(none) shared(input_img, output_img) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows, VEC_SIZE)
+#pragma omp parallel for schedule(static) default(none) shared(input_img, output_img) private(i) firstprivate(kernel, kernel_vec, kernel_vec8, kernel_vec4, num_cols, num_rows, VEC_SIZE)
                 for (int j = 15; j < num_cols - 1; j += VEC_SIZE) {
                     __m512 sum = _mm512_setzero_ps();
 #pragma GCC unroll 3
